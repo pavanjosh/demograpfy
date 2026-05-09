@@ -145,6 +145,207 @@ flowchart TD
 
 ---
 
+## How It Works — Step by Step
+
+This section traces a single user question from the browser all the way to the rendered answer, naming the exact file and function responsible at each step.
+
+---
+
+### Step 1 — User types a question (`app.py`)
+
+The Streamlit chat input widget in `app.py` captures the question:
+
+```python
+# app.py  ~line 383
+prompt = st.chat_input("Ask your question...")
+final_prompt = prompt or st.session_state.clicked_query
+```
+
+If the user typed something, `final_prompt` holds it. If they clicked a demo query button in the sidebar, `st.session_state.clicked_query` holds it instead. Both paths converge on the same string.
+
+Before the question goes anywhere, the RBAC check (`auth/rbac.py`) confirms the user still has quota. If `remaining == 0` the chat input is replaced with a locked banner and `st.stop()` is never reached. If quota is available, execution continues.
+
+---
+
+### Step 2 — Chat history is loaded and the question is dispatched (`app.py` → `agent/memory.py`)
+
+```python
+# app.py  ~line 396
+response = ask_question_with_memory(user, final_prompt, chat_history)
+```
+
+`ask_question_with_memory` lives in `agent/memory.py`. It does two things before touching the LLM:
+
+1. **Seeds in-memory context from disk** — on the first call for a user it reads the persisted `chat_history/*.json` file (loaded by `load_chat()` in `app.py`) and replays the last 5 user/assistant pairs into a `ChatMessageHistory` object.
+2. **Builds a context block** — it formats those past exchanges as a plain-text prefix:
+
+```python
+# agent/memory.py  ~line 43
+def _build_context_block(user_id: str) -> str:
+    ...
+    lines.append(f"User: {msg.content}")
+    lines.append(f"Assistant: {msg.content}")
+```
+
+The current question is then prepended with this history block:
+
+```python
+# agent/memory.py  ~line 76
+enriched_question = (
+    f"Previous conversation:\n{context_block}\n\n"
+    f"Current question: {question}"
+)
+```
+
+This enriched string — not the raw question — is what gets sent to the agent.
+
+---
+
+### Step 3 — The LLM and SQL agent are initialised (`agent/prompts.py`)
+
+The agent is a module-level singleton created once and reused. `create_demografy_agent()` in `agent/prompts.py` sets up three things:
+
+**a) BigQuery connection via LangChain**
+
+```python
+# agent/prompts.py  ~line 137
+db = SQLDatabase.from_uri(
+    f"bigquery://{os.getenv('BIGQUERY_PROJECT')}/prod_tables",
+    include_tables=["a_master_view"],
+)
+```
+
+`SQLDatabase` is a LangChain wrapper around SQLAlchemy. It gives the agent a `sql_db_query` tool that knows how to run SQL against BigQuery.
+
+**b) Gemini as the LLM**
+
+```python
+# agent/prompts.py  ~line 154
+llm = ChatGoogleGenerativeAI(
+    model="gemini-2.5-flash-lite",
+    google_api_key=os.getenv("GEMINI_API_KEY"),
+    temperature=0,
+)
+```
+
+`temperature=0` makes the model fully deterministic — important for SQL generation where a creative answer is a broken query.
+
+**c) The few-shot system prompt**
+
+```python
+# agent/prompts.py  ~line 168
+_agent = create_sql_agent(
+    llm=llm,
+    db=db,
+    prefix=FEW_SHOT_PREFIX,
+    ...
+)
+```
+
+`FEW_SHOT_PREFIX` (defined at the top of `prompts.py`) is a detailed system prompt that tells Gemini:
+- The exact table name (`demografy.prod_tables.a_master_view`)
+- The mapping from plain English terms to column names (`"diversity"` → `kpi_2_val`, `"rental affordability"` → `kpi_7_val`, etc.)
+- Hard rules: never run `DELETE`/`UPDATE`/`INSERT`, always use the query checker before executing, never return an answer before executing the query
+- Eight worked example Q→SQL pairs that teach the model the expected SQL style
+
+---
+
+### Step 4 — Plain English is converted to SQL (Gemini inside the LangChain agent)
+
+When `agent.invoke({"input": enriched_question})` is called, LangChain's SQL agent enters a **ReAct loop** — it reasons, selects a tool, observes the result, and repeats until it has a final answer.
+
+The sequence of tool calls for a typical question looks like this:
+
+| Agent step | Tool called | What happens |
+|---|---|---|
+| 1 | *(no tool)* | Gemini reads the few-shot prompt and the question, then writes the SQL query in its reasoning step |
+| 2 | `sql_db_query_checker` | The SQL string is sent back to Gemini to check for syntax errors and BigQuery compatibility |
+| 3 | `sql_db_query` | The validated SQL is executed against BigQuery via SQLAlchemy; raw rows are returned as a string |
+| 4 | *(no tool)* | Gemini reads the raw rows and composes a natural language answer |
+
+The prompt's `MANDATORY EXECUTION STEPS` section enforces this order — without it the agent sometimes stops after the query checker and hallucinates data instead of executing the query.
+
+---
+
+### Step 5 — The SQL query is run against BigQuery (`sql_db_query` tool → BigQuery)
+
+The `sql_db_query` tool is provided automatically by LangChain's `create_sql_agent`. It calls:
+
+```python
+db.run(sql_string)  # SQLDatabase wrapper in LangChain
+```
+
+Under the hood this goes through:
+- **SQLAlchemy** with the `sqlalchemy-bigquery` dialect
+- **`google-cloud-bigquery`** client authenticated via the service account key at `GOOGLE_APPLICATION_CREDENTIALS`
+- The query hits `demografy.prod_tables.a_master_view` in BigQuery and returns rows as a plain-text string (e.g., `[('Fitzroy', 'Victoria', 0.87), ...]`)
+
+The result is handed back to the agent as the observation for that tool call.
+
+---
+
+### Step 6 — Raw rows are converted back to plain English (Gemini)
+
+The agent's final reasoning step receives the raw row string and formats it into a readable answer. Because `_agent` is a `create_sql_agent` with `agent_type="openai-tools"`, Gemini generates the final answer as a structured markdown response — typically a short summary sentence followed by a markdown table:
+
+```
+The top 3 most diverse suburbs in Victoria are:
+
+| Suburb | State | Diversity Index |
+|---|---|---|
+| Fitzroy | Victoria | 0.87 |
+...
+```
+
+This string is returned all the way back through `agent.invoke()` → `ask_question_with_memory()` → `app.py` as `response`.
+
+---
+
+### Step 7 — The answer is saved to memory and rendered (`agent/memory.py` → `app.py`)
+
+Back in `agent/memory.py`, the completed exchange is saved to the in-memory store so it becomes available as context for the next question:
+
+```python
+# agent/memory.py  ~line 95
+history.add_user_message(question)
+history.add_ai_message(answer)
+```
+
+Back in `app.py`, `render_assistant_message(str(response))` does three things:
+
+1. **Renders the markdown text** with `st.markdown(content)` — the prose summary and any inline formatting
+2. **Parses the markdown table** — `parse_response()` scans the text for `| col |` lines, extracts headers and rows, and builds a Pandas DataFrame
+3. **Renders a Plotly chart** — if the DataFrame has one numeric column a horizontal bar chart is drawn; if it has two or more numeric columns a grouped bar chart is drawn
+
+Finally, the chat is persisted to disk (`save_chat(user, chat_history)`) and `increment_usage(user)` updates `users.json` so the rate limit counter stays accurate.
+
+---
+
+### Full call chain summary
+
+```
+Browser input
+  └─ app.py  st.chat_input()
+       └─ app.py  ask_question_with_memory()          # quota check + dispatch
+            └─ agent/memory.py  seed_memory_from_history()  # load chat_history/*.json
+            └─ agent/memory.py  _build_context_block()      # last 5 exchanges → text
+            └─ agent/memory.py  agent.invoke()
+                 └─ agent/prompts.py  create_demografy_agent()  # singleton: LLM + DB + prompt
+                      └─ Gemini  (few-shot prompt → writes SQL)
+                      └─ sql_db_query_checker  (Gemini validates SQL)
+                      └─ sql_db_query  → BigQuery via SQLAlchemy  (executes SQL, returns rows)
+                      └─ Gemini  (rows → natural language + markdown table)
+            └─ agent/memory.py  history.add_user_message / add_ai_message  # save to memory
+  └─ app.py  render_assistant_message()
+       └─ st.markdown()          # prose text
+       └─ parse_response()       # markdown table → Pandas DataFrame
+       └─ st.plotly_chart()      # DataFrame → interactive bar chart
+  └─ app.py  save_chat()         # persist to chat_history/<user>.json
+  └─ app.py  increment_usage()   # update users.json rate limit counter
+```
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
