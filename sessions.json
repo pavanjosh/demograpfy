@@ -1,0 +1,87 @@
+{
+  "481584d9-d9ab-47a1-9c19-0757cc209d17": {
+    "user_id": "user_003",
+    "tier": "pro",
+    "expires_at": "2026-05-06T14:27:36.179501"
+  },
+  "658e82a1-01e9-4d6f-8db3-c19545cfe2c4": {
+    "user_id": "user_006",
+    "tier": "basic",
+    "expires_at": "2026-05-06T15:01:04.611810"
+  },
+  "f09ed3b3-e73a-4fd1-8377-9075a76d1be0": {
+    "user_id": "user_006",
+    "tier": "basic",
+    "expires_at": "2026-05-06T16:30:58.936987"
+  },
+  "7f6b91c5-9aa2-4140-a4cf-f7292c1639cb": {
+    "user_id": "user_001",
+    "tier": "free",
+    "expires_at": "2026-05-06T18:17:54.307923"
+  },
+  "98e81aaf-7dda-4150-8777-4c28744f0930": {
+    "user_id": "user_006",
+    "tier": "basic",
+    "expires_at": "2026-05-06T23:41:17.767268"
+  },
+  "04f3fe3c-0f77-4365-8ed8-bf9d57594141": {
+    "user_id": "user_022",
+    "tier": "free",
+    "expires_at": "2026-05-08T10:26:46.852517"
+  },
+  "79b07001-f1ac-46c0-86da-7c0224492f07": {
+    "user_id": "user_022",
+    "tier": "free",
+    "expires_at": "2026-05-08T10:34:58.958102"
+  },
+  "70faf1c0-cb91-4eb3-b030-700a0f3efafa": {
+    "user_id": "user_022",
+    "tier": "free",
+    "expires_at": "2026-05-08T10:37:36.524364"
+  },
+  "ad7da5f6-831b-4e9e-928b-a31fd5604455": {
+    "user_id": "user_022",
+    "tier": "free",
+    "expires_at": "2026-05-08T10:37:38.527915"
+  },
+  "94894c67-1b8a-4235-9ce4-3c71e2cbf292": {
+    "user_id": "user_023",
+    "tier": "free",
+    "expires_at": "2026-05-08T11:00:16.292675"
+  },
+  "dd50992c-b2e0-4f21-9a73-6f5385144ed1": {
+    "user_id": "user_026",
+    "tier": "free",
+    "expires_at": "2026-05-08T11:05:51.762624"
+  },
+  "7706ee03-8fa9-4324-89c8-159f3ca9c7e1": {
+    "user_id": "user_028",
+    "tier": "free",
+    "expires_at": "2026-05-08T11:11:15.046917"
+  },
+  "b409e8b4-ecfa-4803-a968-2615b530b30b": {
+    "user_id": "user_028",
+    "tier": "free",
+    "expires_at": "2026-05-08T11:16:39.151632"
+  },
+  "de9e629c-e5c4-48a7-aec4-a7c2d91d3ba7": {
+    "user_id": "user_028",
+    "tier": "free",
+    "expires_at": "2026-05-08T11:16:40.174254"
+  },
+  "bc0032f4-d2c8-4acc-9f6d-736734e103e0": {
+    "user_id": "user_030",
+    "tier": "free",
+    "expires_at": "2026-05-08T11:21:11.234436"
+  },
+  "a6255a48-f724-42d3-bda6-a8d4483f029c": {
+    "user_id": "user_076",
+    "tier": "pro",
+    "expires_at": "2026-05-10T19:34:00.671501"
+  },
+  "d4b56624-ae94-4a32-b60f-1752be6e57a9": {
+    "user_id": "user_026",
+    "tier": "free",
+    "expires_at": "2026-05-11T18:38:40.269089"
+  }
+}

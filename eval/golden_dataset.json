@@ -1,0 +1,147 @@
+[
+  {
+    "id": 1,
+    "question": "What are the top 3 suburbs in Victoria by diversity index?",
+    "golden_answer": "The top 3 suburbs in Victoria by diversity index are:\n1. Migratory - Offshore - Shipping (Vic.) with a diversity index of 0.97\n2. No usual address (Vic.) with a diversity index of 0.89\n3. Keilor Downs with a diversity index of 0.88",
+    "expected_sql_pattern": "SELECT sa2_name, kpi_2_val FROM demografy.prod_tables.a_master_view WHERE state = 'Victoria' ORDER BY kpi_2_val DESC LIMIT 3",
+    "validation": "exact_sa2_match",
+    "expected_columns": ["sa2_name", "kpi_2_val"]
+  },
+  {
+    "id": 2,
+    "question": "What is the average prosperity score in New South Wales?",
+    "golden_answer": "The average prosperity score in New South Wales is 25.38%.",
+    "expected_sql_pattern": "SELECT AVG(kpi_1_val) FROM demografy.prod_tables.a_master_view WHERE state = 'New South Wales'",
+    "validation": "numeric_tolerance_1pct",
+    "expected_columns": ["avg_prosperity_score"]
+  },
+  {
+    "id": 3,
+    "question": "Which state has the highest average learning level?",
+    "golden_answer": "The state with the highest average learning level should be identified by querying and grouping all states. The response must name a specific Australian state with a numeric score.",
+    "expected_sql_pattern": "SELECT state, AVG(kpi_4_val) FROM demografy.prod_tables.a_master_view GROUP BY state ORDER BY avg_learning_level DESC LIMIT 1",
+    "validation": "exact_state_match",
+    "expected_columns": ["state"]
+  },
+  {
+    "id": 4,
+    "question": "Show me suburbs with social housing above 20%",
+    "golden_answer": "A list of suburb names with their social housing percentages, all above 20%, from across Australia. The response must include actual suburb names and numeric values, not ask a clarifying question.",
+    "expected_sql_pattern": "SELECT sa2_name, kpi_5_val FROM demografy.prod_tables.a_master_view WHERE kpi_5_val > 20",
+    "validation": "row_count_and_sample",
+    "expected_columns": ["sa2_name", "kpi_5_val"]
+  },
+  {
+    "id": 5,
+    "question": "What are the most affordable rental suburbs in Queensland?",
+    "golden_answer": "The most affordable rental suburbs in Queensland are:\n- Stanthorpe (97.47%)\n- Redbank Plains (95.91%)\n- Leichhardt - One Mile (95.54%)\n- Park Avenue (95.49%)\n- Collingwood Park - Redbank (95.40%)\n- Kilkivan (95.22%)\n- Southern Moreton Bay Islands (95.02%)\n- Deeragun - Jensen (94.77%)\n- Brassall (94.64%)\n- Morayfield - East (94.61%)",
+    "expected_sql_pattern": "SELECT sa2_name, kpi_7_val FROM demografy.prod_tables.a_master_view WHERE state = 'Queensland' ORDER BY kpi_7_val DESC LIMIT 10",
+    "validation": "correct_ordering",
+    "expected_columns": ["sa2_name", "kpi_7_val"]
+  },
+  {
+    "id": 6,
+    "question": "Compare home ownership vs rental access across all states",
+    "golden_answer": "The average home ownership across all states is as follows:\n- Tasmania: 70.21%\n- Victoria: 70.08%\n- South Australia: 69.53%\n- Western Australia: 66.43%\n- New South Wales: 65.52%\n- Australian Capital Territory: 63.69%\n- Queensland: 63.58%\n- Northern Territory: 41.30%\n\nAnd the average rental access is:\n- Tasmania: 83.59%\n- South Australia: 83.38%\n- Victoria: 71.52%\n- Western Australia: 71.44%\n- Queensland: 69.81%\n- New South Wales: 68.64%\n- Australian Capital Territory: 62.20%\n- Northern Territory: 57.40%",
+    "expected_sql_pattern": "SELECT state, AVG(kpi_6_val), AVG(kpi_7_val) FROM demografy.prod_tables.a_master_view GROUP BY state",
+    "validation": "all_states_present",
+    "expected_columns": ["state", "avg_resident_equity", "avg_rental_access"]
+  },
+  {
+    "id": 7,
+    "question": "Which suburbs in WA have the highest young family presence?",
+    "golden_answer": "The suburbs in Western Australia with the highest young family presence are:\n1. Piara Waters - Forrestdale (29.77%)\n2. Harrisdale (29.01%)\n3. Byford (28.27%)\n4. Newman (27.81%)\n5. Baldivis - South (27.15%)\n6. Alkimos - Eglinton (27.04%)\n7. Seville Grove (26.88%)\n8. Wellard (West) - Bertram (26.86%)\n9. Aveley (26.49%)\n10. Karratha (26.44%)",
+    "expected_sql_pattern": "SELECT sa2_name, kpi_10_val FROM demografy.prod_tables.a_master_view WHERE state = 'Western Australia' ORDER BY kpi_10_val DESC",
+    "validation": "correct_ordering",
+    "expected_columns": ["sa2_name", "kpi_10_val"]
+  },
+  {
+    "id": 8,
+    "question": "What is the average diversity index nationally?",
+    "golden_answer": "The average diversity index nationally is 0.70.",
+    "expected_sql_pattern": "SELECT AVG(kpi_2_val) FROM demografy.prod_tables.a_master_view",
+    "validation": "numeric_tolerance_1pct",
+    "expected_columns": ["avg_diversity_index"]
+  },
+  {
+    "id": 9,
+    "question": "Show me suburbs with the best resident anchor score in South Australia",
+    "golden_answer": "The following suburbs in South Australia have the highest resident anchor scores:\n- One Tree Hill (72.92%)\n- Clarendon (72.78%)\n- Sheidow Park - Trott Park (71.47%)\n- Redwood Park (70.56%)\n- Greenwith (69.52%)\n- Adelaide Hills (69.49%)\n- Woodcroft (69.41%)\n- Port Pirie Surrounds (69.16%)\n- Coromandel Valley (68.96%)\n- Happy Valley (68.63%)",
+    "expected_sql_pattern": "SELECT sa2_name, kpi_8_val FROM demografy.prod_tables.a_master_view WHERE state = 'South Australia' ORDER BY kpi_8_val DESC",
+    "validation": "correct_ordering",
+    "expected_columns": ["sa2_name", "kpi_8_val"]
+  },
+  {
+    "id": 10,
+    "question": "Which suburbs have both high prosperity (over 70%) and high diversity (over 0.8)?",
+    "golden_answer": "A list of suburb names with their prosperity score (>70%) and diversity index (>0.8). The response must return actual matching suburbs with both values, not claim that no suburbs exist.",
+    "expected_sql_pattern": "SELECT sa2_name, kpi_1_val, kpi_2_val FROM demografy.prod_tables.a_master_view WHERE kpi_1_val > 70 AND kpi_2_val > 0.8",
+    "validation": "filter_correctness",
+    "expected_columns": ["sa2_name", "kpi_1_val", "kpi_2_val"]
+  },
+
+  {
+    "id": 11,
+    "question": "What are the top 3 suburbs in Victoria by diversity index?",
+    "golden_answer": "The top 3 suburbs in Victoria by diversity index are:\n1. Migratory - Offshore - Shipping (Vic.) with a diversity index of 0.97\n2. No usual address (Vic.) with a diversity index of 0.89\n3. Keilor Downs with a diversity index of 0.88",
+    "simulated_answer": "The top 3 suburbs in Victoria with the highest diversity index scores are:\n1. Migratory - Offshore - Shipping (Vic.) — Diversity Index: 0.97\n2. No usual address (Vic.) — Diversity Index: 0.89\n3. Keilor Downs — Diversity Index: 0.88",
+    "expected_score_range": [4, 5],
+    "test_label": "high_score: exact data, minor rephrasing"
+  },
+  {
+    "id": 12,
+    "question": "What is the average prosperity score in New South Wales?",
+    "golden_answer": "The average prosperity score in New South Wales is 25.38%.",
+    "simulated_answer": "The average prosperity score across all suburbs in New South Wales is approximately 25.38%.",
+    "expected_score_range": [4, 5],
+    "test_label": "high_score: correct value with minor rephrasing"
+  },
+  {
+    "id": 13,
+    "question": "What are the most affordable rental suburbs in Queensland?",
+    "golden_answer": "The most affordable rental suburbs in Queensland are:\n- Stanthorpe (97.47%)\n- Redbank Plains (95.91%)\n- Leichhardt - One Mile (95.54%)\n- Park Avenue (95.49%)\n- Collingwood Park - Redbank (95.40%)",
+    "simulated_answer": "The most affordable rental suburbs in Queensland are:\n- Stanthorpe (97.47%)\n- Redbank Plains (95.91%)\n- Leichhardt - One Mile (95.54%)\n- Park Avenue (95.49%)\n- Collingwood Park - Redbank (95.40%)\n- Kilkivan (95.22%)\n- Southern Moreton Bay Islands (95.02%)\n- Deeragun - Jensen (94.77%)\n- Brassall (94.64%)\n- Morayfield - East (94.61%)",
+    "expected_score_range": [4, 5],
+    "test_label": "high_score: correct data, extra rows included"
+  },
+  {
+    "id": 14,
+    "question": "What is the average diversity index nationally?",
+    "golden_answer": "The average diversity index nationally is 0.70.",
+    "simulated_answer": "The national average diversity index is 0.70.",
+    "expected_score_range": [4, 5],
+    "test_label": "high_score: exact match rephrased"
+  },
+  {
+    "id": 15,
+    "question": "Which state has the highest average learning level?",
+    "golden_answer": "The state with the highest average learning level should be identified by querying and grouping all states. The response must name a specific Australian state with a numeric score.",
+    "simulated_answer": "An error occurred while processing your question: Could not reflect: requested table(s) not available in Engine(bigquery://demografy/prod_tables): (demografy.prod_tables.a_master_view)",
+    "expected_score_range": [1, 1],
+    "test_label": "low_score: database error, no answer returned"
+  },
+  {
+    "id": 16,
+    "question": "Show me suburbs with social housing above 20%",
+    "golden_answer": "A list of suburb names with their social housing percentages, all above 20%, from across Australia.",
+    "simulated_answer": "I can help you with that. Which state are you interested in?",
+    "expected_score_range": [1, 2],
+    "test_label": "low_score: asked clarifying question instead of answering"
+  },
+  {
+    "id": 17,
+    "question": "Which suburbs have both high prosperity (over 70%) and high diversity (over 0.8)?",
+    "golden_answer": "A list of suburb names with their prosperity score (>70%) and diversity index (>0.8). The response must return actual matching suburbs with both values.",
+    "simulated_answer": "There are no suburbs that meet both criteria.",
+    "expected_score_range": [1, 2],
+    "test_label": "low_score: false negative, claims no suburbs exist"
+  },
+  {
+    "id": 18,
+    "question": "Which suburbs in WA have the highest young family presence?",
+    "golden_answer": "The suburbs in Western Australia with the highest young family presence are:\n1. Piara Waters - Forrestdale (29.77%)\n2. Harrisdale (29.01%)\n3. Byford (28.27%)",
+    "simulated_answer": "Some suburbs in WA with high young family presence include Piara Waters and Harrisdale. These are growing outer suburbs with many families.",
+    "expected_score_range": [2, 4],
+    "test_label": "medium_score: correct suburbs but missing scores and full ranking"
+  }
+]

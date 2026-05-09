@@ -1,0 +1,55 @@
+LangChain is doing three specific jobs in this project — nothing more.
+                                                                                                                                                                                                                    
+  ---                                                                                      
+  What LangChain Does Here                                                                                                                                                                                          
+                                                                                                                                                                                                                    
+  1. Database Wrapper — SQLDatabase (prompts.py:123, 137–151)                                                                                                                                                       
+                                                                                                                                                                                                                    
+  from langchain_community.utilities import SQLDatabase
+                                                                                                                                                                                                                    
+  db = SQLDatabase.from_uri(
+      "bigquery://demografy/prod_tables",
+      include_tables=["a_master_view"],                                                                                                                                                                             
+  )
+                                                                                                                                                                                                                    
+  LangChain wraps the BigQuery connection (via SQLAlchemy) into an object the agent can use. It exposes two tools the LLM can call:                                                                                 
+  - sql_db_query_checker — validates SQL syntax before running
+  - sql_db_query — actually executes the SQL and returns rows                                                                                                                                                       
+                                                             
+  Without this, you'd have to manually wire up BigQuery, write the tool definitions, handle errors, etc. LangChain does all that for you.                                                                           
+                                                                                                                                                                                                                    
+  ---
+  2. SQL Agent — create_sql_agent (prompts.py:124, 168–177)                                                                                                                                                         
+                                                                                                                                                                                                                    
+  from langchain_community.agent_toolkits import create_sql_agent
+                                                                                                                                                                                                                    
+  _agent = create_sql_agent(
+      llm=llm,
+      db=db,
+      agent_type="openai-tools",                                                                                                                                                                                    
+      prefix=FEW_SHOT_PREFIX,
+      ...                                                                                                                                                                                                           
+  )               
+
+  This is the core of LangChain's role. It creates a ReAct loop agent that:                                                                                                                                         
+  1. Takes the user's question
+  2. Gives the LLM the few-shot prompt + schema context                                                                                                                                                             
+  3. Lets the LLM call sql_db_query_checker → then sql_db_query as tool calls
+  4. Feeds the real query results back to the LLM                                                                                                                                                                   
+  5. Returns the final natural language answer                                                                                                                                                                      
+                                                                                                                                                                                                                    
+  Without LangChain, you'd have to build this loop yourself — parse tool calls, execute them, feed results back, handle retries up to max_iterations=15, etc.                                                       
+                                                                                                                                                                                                                    
+  ---             
+  3. Conversation Memory — ChatMessageHistory (memory.py:1, 7, 14)                                                                                                                                                  
+                                                                                                                                                                                                                    
+  from langchain_community.chat_message_histories import ChatMessageHistory
+                                                                                                                                                                                                                    
+  _history_store: dict[str, ChatMessageHistory] = {}                                                                                                                                                                
+   
+  LangChain provides the ChatMessageHistory object to store per-user conversation history in RAM. It gives typed HumanMessage / AIMessage objects that are easy to iterate and format into context blocks.          
+                  
+  ---                                                                                                                                                                                                               
+  What LangChain is NOT doing here
+                                  
+  - It is not calling the LLM directly — that's ChatGoogleGenerativeAI from langchain_google_genai (Google's own SDK wrapped in LangChain's interface)
