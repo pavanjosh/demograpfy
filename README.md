@@ -4,6 +4,42 @@ A Streamlit-based SaaS app that lets authenticated users query Australian demogr
 
 ---
 
+## Problem Statement
+
+### The Problem
+
+Australia holds rich suburb-level demographic data — prosperity scores, diversity indices, rental affordability, education attainment, family composition, and more — yet this data is largely inaccessible to the people who need it most. Real estate investors, property developers, urban planners, and community researchers face a fundamental barrier: **the data lives in SQL databases that require technical expertise to query**.
+
+Today, a property investor who wants to answer "Which suburbs in Queensland have high rental affordability and strong long-term resident stability?" must either:
+
+1. Write complex SQL across multiple columns and aggregations — a skill most domain experts do not have, or
+2. Commission a data analyst and wait days for a report, or
+3. Rely on simplified, pre-packaged reports that cannot answer their specific question.
+
+This creates a **decision latency and access gap** — high-value insights exist in the data but remain locked away from the decision-makers who need them.
+
+### Why This Matters
+
+Suburb-level demographics directly drive multi-million-dollar decisions in real estate investment, urban development policy, and social services planning. A one-suburb difference in a portfolio decision can mean the difference between a strong rental yield and a high-vacancy property. Yet the people making these calls are not SQL engineers — they are domain specialists who think in plain English.
+
+Beyond real estate, demographic data informs:
+
+- **Urban planning** — where to build schools, transport links, and social housing
+- **Government policy** — identifying suburbs with concentrated social disadvantage
+- **Community organisations** — targeting services to areas with high migration footprint or young family populations
+
+The status quo forces these users into slow, expensive, intermediary-dependent workflows that delay decisions and limit the questions they can even think to ask.
+
+### What Demography Insights Solves
+
+Demography Insights removes the SQL barrier entirely. Users type a question in plain English — "Show me the top 5 most diverse suburbs in Victoria with above-average resident stability" — and get an answer in seconds, complete with a data table and interactive chart.
+
+The system translates natural language into precise BigQuery SQL via a Google Gemini-powered LangChain agent, executes it against authoritative Australian demographic data (SA2 suburb level, 10 KPIs), and returns a formatted, visualised response. Conversation memory means users can ask follow-up questions naturally, just as they would with a human analyst.
+
+By pairing **LLM-powered query understanding** with **trusted data execution** and a **rigorous evaluation framework** (LLM-as-Judge scoring against a golden dataset), the product delivers analyst-grade answers at conversational speed — democratising access to demographic intelligence for the professionals who need it.
+
+---
+
 ## Project Structure
 
 ```
